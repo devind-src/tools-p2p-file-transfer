@@ -10,6 +10,8 @@ namespace P2PFileTransfer;
 
 public static class AppSetup
 {
+    public const string ServiceName = "P2PFileTransfer";
+
     public static bool TryLoadOptions(IConfiguration configuration, out P2POptions options)
     {
         options = configuration.GetSection(P2POptions.SectionName).Get<P2POptions>() ?? new P2POptions();
@@ -54,6 +56,11 @@ public static class AppSetup
         if (!TryLoadOptions(builder.Configuration, out var options)) return 1;
         ConfigureLogging(builder.Logging, options);
         AddCoreServices(builder.Services, options);
+
+        // Run as a native Windows Service / systemd service when started by the service manager
+        // (no effect when started from a console).
+        builder.Services.AddWindowsService(o => o.ServiceName = ServiceName);
+        builder.Services.AddSystemd();
 
         builder.Services.AddSingleton<NonceCache>();
         builder.Services.AddSingleton<ClientIpGuard>();

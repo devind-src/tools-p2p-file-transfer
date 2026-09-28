@@ -24,7 +24,7 @@ ke node lain, jadi server A bisa kirim ke B dan B bisa kirim ke A.
 | History / tidak kirim ulang | `data/sent-history.json` mencatat file (path + ukuran + waktu modifikasi + SHA-256) per job & per peer. Penerima juga menyimpan `data/received-log.json`, jadi walaupun history pengirim hilang file tidak dikirim ulang. |
 | File backup DB | Chunked upload (default 4 MB), **resume** otomatis jika koneksi putus, verifikasi **SHA-256**, file yang masih ditulis (backup berjalan) dilewati dan dicoba lagi nanti. |
 | HTTP/HTTPS + API key | Semua request ditandatangani HMAC-SHA256 dengan kunci turunan API key. Kredensial salah → ditolak (401) dan IP di-ban sementara. |
-| Independen | Hanya memakai .NET 10 shared framework, **tanpa paket NuGet / library pihak ketiga**. Bisa di-publish *self-contained single file* sehingga server tujuan tidak perlu menginstal .NET. |
+| Independen | Tool berdiri sendiri: **tidak me-link `SyncNetSdk.dll`** atau SDK internal lain. Dependensinya hanya .NET 10 (ASP.NET Core/Kestrel) + paket resmi Microsoft `Microsoft.Extensions.Hosting.WindowsServices` & `.Systemd`. Di-publish *self-contained single file*, jadi server tujuan tidak perlu menginstal .NET maupun DLL tambahan. |
 
 ## Keamanan
 
@@ -72,7 +72,7 @@ src/P2PFileTransfer/
   Logging/                     file logger harian (tanpa library luar)
   Cli/                         perintah command line
 deploy/
-  install-windows.ps1          install sebagai task otomatis (start saat boot, auto restart)
+  install-windows.ps1          install sebagai Windows Service (auto start, auto restart)
   uninstall-windows.ps1
   p2p-transfer.service         unit systemd untuk Linux
 publish.ps1 / publish.sh       build executable self-contained
@@ -110,9 +110,13 @@ Lakukan di **setiap** server.
    * **Windows** (PowerShell sebagai Administrator):
      ```powershell
      .\deploy\install-windows.ps1 -InstallDir C:\P2PFileTransfer -Port 5080 -RemoteAddress 192.168.1.20
+     # atau jalankan dengan akun service tertentu (mis. yang punya akses ke folder backup / share):
+     .\deploy\install-windows.ps1 -Credential (Get-Credential DOMAIN\svc-p2p)
      ```
-     Task Scheduler akan menjalankan aplikasi saat boot sebagai SYSTEM dan me-restart otomatis jika berhenti.
-   * **Linux**: lihat komentar di `deploy/p2p-transfer.service`.
+     Aplikasi terdaftar sebagai **Windows Service** `P2PFileTransfer` (Automatic – Delayed Start) dengan
+     recovery: di-restart otomatis jika berhenti tidak normal. Kelola dengan `services.msc`,
+     `Start-Service` / `Stop-Service P2PFileTransfer`. Log juga masuk ke Windows Event Log (Application).
+   * **Linux**: lihat komentar di `deploy/p2p-transfer.service` (systemd `Type=notify`).
 
 > Pastikan jam kedua server sinkron (NTP / Windows Time), karena request dengan selisih waktu
 > lebih dari `ClockSkewSeconds` ditolak.

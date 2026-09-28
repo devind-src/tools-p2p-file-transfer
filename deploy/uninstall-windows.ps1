@@ -1,8 +1,10 @@
 #Requires -RunAsAdministrator
-param([string]$TaskName = "P2PFileTransfer")
+param([string]$ServiceName = "P2PFileTransfer")
 
-Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
-Get-NetFirewallRule -DisplayName $TaskName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
-Get-Process -Name "P2PFileTransfer" -ErrorAction SilentlyContinue | Stop-Process -Force
-Write-Host "Task and firewall rule removed. The install folder (history, logs, config) was left untouched."
+$svc = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+if ($svc) {
+    if ($svc.Status -ne "Stopped") { Stop-Service -Name $ServiceName -Force }
+    sc.exe delete $ServiceName | Out-Null
+}
+Get-NetFirewallRule -DisplayName $ServiceName -ErrorAction SilentlyContinue | Remove-NetFirewallRule
+Write-Host "Service and firewall rule removed. The install folder (history, logs, config) was left untouched."

@@ -15,7 +15,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
+Type=notify
 User=p2ptransfer
 Group=p2ptransfer
 WorkingDirectory=/opt/p2ptransfer
