@@ -1,0 +1,10 @@
+bin/
+obj/
+publish/
+data/
+logs/
+*.pfx
+*.user
+.vs/
+.vscode/
+.idea/

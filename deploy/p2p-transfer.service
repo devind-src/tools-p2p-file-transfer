@@ -1,0 +1,43 @@
+# systemd unit for P2PFileTransfer
+#   sudo useradd --system --no-create-home --shell /usr/sbin/nologin p2ptransfer
+#   sudo cp -r publish/linux-x64 /opt/p2ptransfer && sudo chown -R p2ptransfer: /opt/p2ptransfer
+#   sudo chmod 600 /opt/p2ptransfer/appsettings.json
+#   sudo cp deploy/p2p-transfer.service /etc/systemd/system/ && sudo systemctl daemon-reload
+#   sudo systemctl enable --now p2p-transfer
+#   journalctl -u p2p-transfer -f
+#
+# The service user needs read access to the backup source folders and write access
+# to the receive destinations (add them to ReadWritePaths below).
+
+[Unit]
+Description=P2P File Transfer (peer-to-peer backup replication)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=p2ptransfer
+Group=p2ptransfer
+WorkingDirectory=/opt/p2ptransfer
+ExecStart=/opt/p2ptransfer/P2PFileTransfer
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=60
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+UMask=0027
+ReadWritePaths=/opt/p2ptransfer /var/backups/p2p-incoming
+
+[Install]
+WantedBy=multi-user.target
